@@ -22,11 +22,18 @@ const int aH = 880;
 
 int counter=0;
 
+
 void buzzon(){
   beep(a,10);
 }
 void buzzoff(){
   beep(g,10);
+}
+
+void buzzreboot(){
+  beep(a,50);
+  beep(g,10);
+  beep(a,50);
 }
 
 void playMusic(){

@@ -66,10 +66,6 @@ char buf[13];
 
 
 
-#include <SPI.h>             // f.k. for Arduino-1.5.2
-#define USE_SDFAT
-#include <SdFat.h>           // Use the SdFat library
-SdFatSoftSpi<12, 11, 13> SD; //Bit-Bang on the Shield pins
 
 // Initialize a connection to esp-link using the normal hardware serial port both for
 // SLIP and for debug messages.
@@ -81,7 +77,7 @@ ELClientMqtt mqtt(&esp);
 
 
 // all the switch state
-boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway = false, kitchen = false;
+boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway1 = false, kitchen = false, buzzer = false;
 
 // Current date time
 String currentTimeStr = "";
@@ -103,26 +99,42 @@ void wifiCb(void* response) {
   }
 }
 
-bool connected;
+bool connected = false;
 
 // Callback when MQTT is connected
 void mqttConnected(void* response) {
   Serial.println("MQTT connected!");
-  //mqtt.subscribe("/brownstone/touchctl01/switch/cmnd");
-  //mqtt.subscribe("/brownstone/livingrm/switch/stat/POWER");
-  mqtt.subscribe("/brownstone/livrmfan/switch/stat/+", 1);
-  mqtt.subscribe("/brownstone/doorway/switch/stat/+", 1);
-  mqtt.subscribe("/brownstone/livrm/switch/stat/+", 1);
-  mqtt.subscribe("/brownstone/balcony/switch/stat/+", 1);
-  mqtt.subscribe("/brownstone/hallway/switch/stat/+", 1);
-  mqtt.subscribe("/brownstone/kitchen/switch/stat/+", 1);
-
-  Serial.println("Draw startup screen and published to all the queue");
   connected = true;
-  drawStartupScreen();
+  // doorbell 
+  mqtt.subscribe("brownstone/touchctl/buzzer",1);
+  
+  mqtt.subscribe("brownstone/livingrm/stat/switch/POWER1", 1);
+  mqtt.subscribe("stat/livingrm/POWER1", 1);
+  
+  mqtt.subscribe("brownstone/livingrm/stat/switch/POWER2", 1);
+  mqtt.subscribe("stat/livingrm/POWER2", 1);
+  
+  mqtt.subscribe("brownstone/balcony/stat/switch/POWER", 1);
+  mqtt.subscribe("stat/balcony/POWER", 1);
+  
+  mqtt.subscribe("brownstone/hallway1/stat/switch/POWER2", 1);
+  mqtt.subscribe("stat/hallway1/POWER2", 1);
+  
+  mqtt.subscribe("brownstone/hallway1/stat/switch/POWER1", 1);
+  mqtt.subscribe("stat/hallway1/POWER1", 1);
+  
+  mqtt.subscribe("stat/kitchen/POWER", 1);
+  mqtt.subscribe("brownstone/kitchen/stat/switch/POWER", 1);
+  
+  mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
+  
+  Serial.println("Draw startup screen and published to all the queue");
+  
+  //drawStartupScreen();
+  //digitalClockDisplay();
   controlPanelQueryStatus();
 
-  digitalClockDisplay();
+  
 }
 
 // Callback when MQTT is disconnected
@@ -131,7 +143,7 @@ void mqttDisconnected(void* response) {
   connected = false;
   
   //reboot when the MQTT is disconnected
-  //delay(5000);
+  delay(1000);
   asm volatile ("  jmp 0");  
 }
 
@@ -147,9 +159,9 @@ void mqttData(void* response) {
   String data = res->popString();
   Serial.println(data);
 
-  //boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway = false, kitchen = false;
+  //boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway1 = false, kitchen = false;
   // living rm light status 
-  if (topic == "/brownstone/livrmfan/switch/stat/POWER"){
+  if ((topic == "stat/livingrm/POWER2") || (topic == "brownstone/livingrm/stat/switch/POWER2")){
     
     if (data == "ON"){
       Serial.println("power is on");
@@ -163,7 +175,7 @@ void mqttData(void* response) {
 
     }
   }
-  if (topic == "/brownstone/doorway/switch/stat/POWER"){
+  if ((topic == "stat/hallway1/POWER1") || (topic == "brownstone/hallway1/stat/switch/POWER1")){
     
     if (data == "ON"){
       Serial.println("power is on");
@@ -177,7 +189,7 @@ void mqttData(void* response) {
 
     }
   }
-  if (topic == "/brownstone/balcony/switch/stat/POWER"){
+  if ((topic == "stat/balcony/POWER") || (topic == "brownstone/balcony/stat/switch/POWER")){
     
     if (data == "ON"){
       Serial.println("power is on");
@@ -191,7 +203,7 @@ void mqttData(void* response) {
 
     }
   }
-  if (topic == "/brownstone/livrm/switch/stat/POWER"){
+  if ((topic == "stat/livingrm/POWER1") || (topic == "brownstone/livingrm/stat/switch/POWER1")){
     
     if (data == "ON"){
       Serial.println("power is on");
@@ -206,22 +218,22 @@ void mqttData(void* response) {
 
     }
   }
-  if (topic == "/brownstone/hallway/switch/stat/POWER"){
+  if ((topic == "stat/hallway1/POWER2") || (topic == "brownstone/hallway1/stat/switch/POWER2")){
     
     if (data == "ON"){
       Serial.println("power is on");
-      hallway = true;
+      hallway1 = true;
        myGLCD.fillRect(0, 140, 150, 50, GREEN);
     } 
     else {
       Serial.println("power is off");
-      hallway = false;
+      hallway1 = false;
       
       myGLCD.fillRect(0, 140, 150, 50, BLACK);      
 
     }
   }
-  if (topic == "/brownstone/kitchen/switch/stat/POWER"){
+  if ((topic == "stat/kitchen/POWER") || (topic == "brownstone/kitchen/stat/switch/POWER")){
     
     if (data == "ON"){
       Serial.println("power is on");
@@ -236,8 +248,17 @@ void mqttData(void* response) {
 
     }
   }
- 
+
+  if (topic == "brownstone/touchctl/buzzer"){
+    if (data == "ON"){
+      buzzer = true;
+    }
+    else
+      buzzer = false;
+  }
+  // redraw the line
   homescr();
+  
 }
 
 void mqttPublished(void* response) {
@@ -246,12 +267,12 @@ void mqttPublished(void* response) {
 
 
 void controlPanelQueryStatus(){
-  mqtt.publish("/brownstone/livrmfan/switch/cmnd/Power","8",1);
-  mqtt.publish("/brownstone/doorway/switch/cmnd/Power","8",1);
-  mqtt.publish("/brownstone/livrm/switch/cmnd/Power","8",1);
-  mqtt.publish("/brownstone/balcony/switch/cmnd/Power","8",1);
-  mqtt.publish("/brownstone/hallway/switch/cmnd/Power","8",1);
-  mqtt.publish("/brownstone/kitchen/switch/cmnd/Power","8",1);
+  mqtt.publish("brownstone/livingrm/cmnd/switch/Power1","8",1);
+  mqtt.publish("cmnd/hallway1/Power1","8",1);
+  mqtt.publish("brownstone/livingrm/cmnd/switch/Power2","8",1);
+  mqtt.publish("brownstone/balcony/cmnd/switch/Power","8",1);
+  mqtt.publish("brownstone/hallway1/cmnd/switch/Power2","8",1);
+  mqtt.publish("cmnd/kitchen/Power","8",1);
   Serial.println("controlPanelQueryStatus");
 }
 
@@ -279,6 +300,15 @@ void setup() {
       while (1);
   }
   
+  drawStartupScreen();
+  // get the time from ESP-link NTP time. 
+  // the time is already time-zone adjusted.
+  uint32_t currtime = cmd.GetTime();
+  setTime(currtime);
+  setSyncProvider(requestSync);
+  digitalClockDisplay();
+  refreshDateTime();
+  
   // initialise the ESP-Link and connect to MQTT
   Serial.println("EL-Client starting!");
   esp._debugEn = false;
@@ -294,22 +324,15 @@ void setup() {
   Serial.println("EL-Client synced!");
   
   // Set-up callbacks for events and initialize with esp-link.
+  mqtt.dataCb.attach(mqttData);
   mqtt.connectedCb.attach(mqttConnected);
   mqtt.disconnectedCb.attach(mqttDisconnected);
   mqtt.publishedCb.attach(mqttPublished);
-  mqtt.dataCb.attach(mqttData);
+
   mqtt.setup();
 
-  // get the time from ESP-link NTP time. 
-  // the time is already time-zone adjusted.
-  uint32_t currtime = cmd.GetTime();
-  setTime(currtime);
-  setSyncProvider(requestSync);
-  digitalClockDisplay();
-  refreshDateTime();
 
-  // setup the SDCard reader that come with the touch screen
-  setupSDCard();
+
 }
 
 
@@ -330,6 +353,15 @@ void loop() {
         refreshDateTime();
         rebroadcast = 0;
       }
+
+      //check if buzzer is pressed
+      if (buzzer == true){
+        Serial.println("Buzzer True ");
+        buzzer = false;
+        mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
+        playMusic();
+      }
+      
       rebroadcast++;
     }
     readCoordinates();

@@ -47,11 +47,6 @@ void printDigits(int digits){
 }
 
 
-String getSwitchStatus(String queue){
-
-  mqtt.publish("brownstone/livingrm/switch/cmnd/STATUS", "0"); 
-}
-
 time_t requestSync()
 {
   return cmd.GetTime(); // the time will be sent later in response to serial mesg
