@@ -1,3 +1,4 @@
+// some common functions
 
 // get the current time from ntp server
 void digitalClockDisplay(){

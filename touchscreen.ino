@@ -1,3 +1,4 @@
+// acknowledgement https://github.com/prenticedavid/MCUFRIEND_kbv
 // all the touch screen related code
 
 #define TOUCH_ORIENTATION  LANDSCAPE

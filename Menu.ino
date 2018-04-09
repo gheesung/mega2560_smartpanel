@@ -1,19 +1,29 @@
+/* 
+   The original source code was from JOS TFT but was heavily modified to suit the touch screen panel needs
+   
+   JOS TFT Touch Beta   version v2.1.0.3 3/07/2013
+   Adafruit_TFTLCD.h and Adafruit_TouchScreen.h are from adafruit.com where you can also purchase a really nice 2.8" TFT with touchscreen :)
+   Oringinal Sketch written by jeremy saglimbeni: www.thecustomgeek.com 
+   Updates for uno/mega nathan sobieck: www.sobisource.com 
+       backlight = pin 10 uno / pin 35 mega
+       Must use libraries included / which are Adafruit's current Adafruit_GFX, Adafruit_TFTLCD and TouchScreen Libraries
+       as of 3/07/13 
+     
+     *Note if you are using Adafruits TFTLCD Shield. Then you need to uncomment #define USE_ADAFRUIT_SHIELD_PINOUT 
+     in Adafruit_TFTLCD > Adafruit_TFTLCD.h  
+       However if you are using the shield Backlight PWM will not function unless you make a few simple hardware changes...
+     Learn How Here....http://learn.adafruit.com/2-8-tft-touch-shield/controlling-the-backlight
+     
+*/ 
+
 
 int page = 0;
-int sleep = 0;
 int pulsev = 0;
-int redflag = 0;
-int greenflag = 0;
-int redled = 12;
-int greenled = 13;
-int backlight = 10;  //pin-10 uno  pin-35 mega  pin-3 for shield if you have done the MOD   for PWM backlight
-unsigned long sleeptime;
 
 int prevpage;
 unsigned long currenttime;
 unsigned long ssitime;
 char voltage[10];
-char battpercenttxt [10];
 
 
 int getBandgap(void) // Returns actual value of Vcc (x 100) 415 = 4.15v
@@ -118,8 +128,11 @@ void drawStartupScreen(){
 }
 
 void refreshDateTime() {
-  Serial.print("refreshDateTime  ");
+  Serial.print("Update the display to current time ");
   Serial.println(currentTimeStr);
+  Serial3.print("Update the display to current time ");
+  Serial3.println(currentTimeStr);
+
   myGLCD.fillRect(12, 213, 226, 16, BLACK); // black out the inside of the message box
   myGLCD.setTextColor(WHITE);
   myGLCD.setTextSize(2);
@@ -137,25 +150,7 @@ void redraw() { // redraw the page
     homescr();
   }
 }
-void yled(int xled) { // "flashes" the "yellow" LED
-  /*for(i = xled ; i >= 0; i-=1) { 
-    digitalWrite(greenled, LOW);
-    digitalWrite(redled, HIGH);
-    delay(1);
-    digitalWrite(greenled, HIGH);
-    digitalWrite(redled, LOW);
-    delay(1);    
-  }
-  digitalWrite(greenled, LOW);
-  if (greenflag == 1) {
-    digitalWrite(redled, LOW);
-    digitalWrite(greenled, HIGH);
-  }
-  if (redflag == 1) {
-    digitalWrite(greenled, LOW);
-    digitalWrite(redled, HIGH);
-  }*/
-}
+
 void clearcenter() { // the reason for so many small "boxes" is that it's faster than filling the whole thing
   myGLCD.setColor(BLACK);
   myGLCD.drawRectXY(0, 20, 150, 50);
@@ -192,6 +187,7 @@ void decimate(char test[],int dec) {  // creates decimal function  decimate(stri
  strcpy(test,msg);
 } 
 
+// This is the main routine to monitor which buttons on the touch screen was clicked.
 void navigation(){
   int y = map(tp.y, 106, 899, 0, 320);
   int x = map(tp.x, 167, 880, 0, 240);
@@ -327,31 +323,17 @@ void navigation(){
       homescr();
       for (int i = 0; i<20000;i++);
     }
-    // home
+    // home. This is the reset button for the Mega2560
     if (tp.y > 200 && tp.y < 240 && tp.x > 280 && tp.x < 320) { // if the home icon is pressed
-      Serial.println("home");
+      Serial.println("home button pressed! resetting the Mega2560!");
+      Serial3.println("home button pressed! resetting the Mega2560!");
       buzzreboot();
-      //digitalWrite(BUZZER, HIGH);
       asm volatile ("  jmp 0"); 
-      /*playMusic();
-      if (page == 0) { // if you are already on the home page
-        drawhomeiconred(); // draw the home icon red
-        delay(250); // wait a bit
-        drawhomeicon(); // draw the home icon back to white
-        return; // if you were on the home page, stop.
-      }
-      else { // if you are not on the settings, home, or keyboard page
-        page = prevpage; // a value to keep track of what WAS on the screen to redraw/erase only what needs to be
-        page = 0; // make the current page home
-        redraw(); // redraw the page
-      }*/
     }
     // message area
     if (tp.y > 1 && tp.y < 240 && tp.x > 1 && tp.x < 44) {
-      refreshDateTime(); // erase the message
+      refreshDateTime(); //refresh the datetime when this is pressed.
     }
-
-
     digitalWrite(BUZZER, LOW);
 }
 

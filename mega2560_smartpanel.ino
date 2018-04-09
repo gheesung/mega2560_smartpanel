@@ -1,5 +1,5 @@
 /*
-  esplink-mqtt.ino - ESP-Link and MQTT 
+  Mega2560_smartpanel.ino - ESP-Link, MQTT and smartpanel
 
   Copyright (C) 2017  Ghee Sung
 
@@ -92,9 +92,12 @@ void wifiCb(void* response) {
 
     if(status == STATION_GOT_IP) {
       Serial.println("WIFI CONNECTED");
+      Serial3.println("WIFI CONNECTED");
     } else {
       Serial.print("WIFI NOT READY: ");
       Serial.println(status);
+      Serial3.print("WIFI NOT READY: ");
+      Serial3.println(status);
     }
   }
 }
@@ -104,8 +107,12 @@ bool connected = false;
 // Callback when MQTT is connected
 void mqttConnected(void* response) {
   Serial.println("MQTT connected!");
+  Serial3.println("MQTT connected!");
   connected = true;
+  
   // doorbell 
+  // first initialise it to OFF when startup
+  mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
   mqtt.subscribe("brownstone/touchctl/buzzer",1);
   
   mqtt.subscribe("brownstone/livingrm/stat/switch/POWER1", 1);
@@ -123,26 +130,21 @@ void mqttConnected(void* response) {
   mqtt.subscribe("brownstone/hallway1/stat/switch/POWER1", 1);
   mqtt.subscribe("stat/hallway1/POWER1", 1);
   
-  mqtt.subscribe("stat/kitchen/POWER", 1);
   mqtt.subscribe("brownstone/kitchen/stat/switch/POWER", 1);
+  mqtt.subscribe("stat/kitchen/POWER", 1);
   
-  mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
-  
-  Serial.println("Draw startup screen and published to all the queue");
-  
-  //drawStartupScreen();
-  //digitalClockDisplay();
+  // refresh all the button status
   controlPanelQueryStatus();
-
   
 }
 
 // Callback when MQTT is disconnected
 void mqttDisconnected(void* response) {
   Serial.println("MQTT disconnected");
+  Serial3.println("MQTT disconnected");
   connected = false;
   
-  //reboot when the MQTT is disconnected
+  // force a reboot when the MQTT is disconnected
   delay(1000);
   asm volatile ("  jmp 0");  
 }
@@ -151,13 +153,17 @@ void mqttDisconnected(void* response) {
 void mqttData(void* response) {
   ELClientResponse *res = (ELClientResponse *)response;
 
-  Serial.print("Received: topic=");
   String topic = res->popString();
+  Serial.print("Received: topic=");
   Serial.println(topic);
+  Serial3.print("Received: topic=");
+  Serial3.println(topic);
 
-  Serial.print("data=");
   String data = res->popString();
+  Serial.print("Received: data=");
   Serial.println(data);
+  Serial3.print("Received: data=");
+  Serial3.println(data);
 
   //boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway1 = false, kitchen = false;
   // living rm light status 
@@ -311,6 +317,7 @@ void setup() {
   
   // initialise the ESP-Link and connect to MQTT
   Serial.println("EL-Client starting!");
+  Serial3.println("EL-Client starting!");
   esp._debugEn = false;
   // Sync-up with esp-link, this is required at the start of any sketch and initializes the
   // callbacks to the wifi status change callback. The callback gets called with the initial
@@ -319,9 +326,13 @@ void setup() {
   bool ok;
   do {
     ok = esp.Sync();      // sync up with esp-link, blocks for up to 2 seconds
-    if (!ok) Serial.println("EL-Client sync failed!");
+    if (!ok) {
+      Serial.println("EL-Client sync failed!");
+      Serial3.println("EL-Client sync failed!");
+    }
   } while(!ok);
   Serial.println("EL-Client synced!");
+  Serial3.println("EL-Client synced!");
   
   // Set-up callbacks for events and initialize with esp-link.
   mqtt.dataCb.attach(mqttData);
@@ -330,8 +341,6 @@ void setup() {
   mqtt.publishedCb.attach(mqttPublished);
 
   mqtt.setup();
-
-
 
 }
 
@@ -342,13 +351,16 @@ void loop() {
   if (connected) {
     controlPanelQueryStatus();
     boolean ispressed;
-    // this is the loop when the touch screen is not pressed.
+    
+    // loop when the touch screen is not pressed.
     while ((ispressed =ISPRESSED()) == false){
       esp.Process();
+      
+      // periodically refresh the screen so that the clock is refreshed and
+      // the button status is updated. 10000 is arbitrary chosen
       if (rebroadcast == 10000){
         controlPanelQueryStatus();
         timeStatus();
-        //setTime(cmd.GetTime());
         digitalClockDisplay(); 
         refreshDateTime();
         rebroadcast = 0;
@@ -356,7 +368,8 @@ void loop() {
 
       //check if buzzer is pressed
       if (buzzer == true){
-        Serial.println("Buzzer True ");
+        Serial.println("Door Bell pressed!");
+        Serial3.println("Door Bell pressed!");
         buzzer = false;
         mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
         playMusic();
@@ -368,12 +381,12 @@ void loop() {
     showpoint();
     
     int x,y;
+
     //LANDSCAPE CALIBRATION     320 x 240
     x = map(tp.y, 106, 899, 0, 320);
     y = map(tp.x, 167, 880, 0, 240);
   
     navigation();
-   
   }
   
 }
