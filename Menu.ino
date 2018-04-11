@@ -120,7 +120,7 @@ void drawStartupScreen(){
   myGLCD.fillRectXY(0, 0, 320, 10); // status bar
   drawhomeicon(); // draw the home icon
   myGLCD.setCursor(1, 1);
-  myGLCD.println("Welcome to NGS's family. The Brownstone v0.2 ");
+  myGLCD.println("Welcome to The Brownstone v0.3 ");
   homescr(); // draw the homescreen
   myGLCD.setColor(WHITE);
   myGLCD.drawRectXY(0, 200, 245, 40); // message box
@@ -204,13 +204,13 @@ void navigation(){
       Serial.println("Doorway Clicked ");
       if (doorway == true){
         buzzoff();
-        mqtt.publish("cmnd/hallway1/Power1","OFF",1);
+        mqtt.publish("bs/hallway1/cmnd/switch/Power1","OFF",1);
         myGLCD.fillRect(0, 20, 150, 50,BLACK);
         doorway = false;
       }
       else{
         buzzon();
-        mqtt.publish("cmnd/hallway1/Power1","ON",1);
+        mqtt.publish("bs/hallway1/cmnd/switch/Power1","ON",1);
         myGLCD.fillRect(0, 20, 150, 50,GREEN);
         doorway = true;
       }
@@ -223,13 +223,13 @@ void navigation(){
       Serial.println("Living Rm Clicked ");
       if (livrm == true){
         buzzoff();
-        mqtt.publish("brownstone/livingrm/cmnd/switch/Power2","OFF",1);
+        mqtt.publish("bs/livingrm/cmnd/switch/Power2","OFF",1);
         myGLCD.fillRect(170, 20, 150, 50, BLACK);
         livrm = false;
       }
       else{
         buzzon();
-        mqtt.publish("brownstone/livingrm/cmnd/switch/Power2","ON",1);
+        mqtt.publish("bs/livingrm/cmnd/switch/Power2","ON",1);
         myGLCD.fillRect(170, 20, 150, 50, GREEN);
         livrm = true;
       }
@@ -241,16 +241,15 @@ void navigation(){
     // area 3
     if (tp.y > 80 && tp.y < 130 && tp.x > 0 && tp.x < 150) {
       Serial.println("Balcony Clicked ");
-      //mqtt.publish("/brownstone/balcony/switch/cmnd/Power","");
       if (balcony == true){
         buzzoff();
-        mqtt.publish("brownstone/balcony/cmnd/switch/Power","OFF",1);
+        mqtt.publish("bs/balcony/cmnd/switch/Power","OFF",1);
         myGLCD.fillRect(0, 80, 150, 50,BLACK);
         balcony = false;
       }
       else{
         buzzon();
-        mqtt.publish("brownstone/balcony/cmnd/switch/Power","ON",1);
+        mqtt.publish("bs/balcony/cmnd/switch/Power","ON",1);
         myGLCD.fillRect(0, 80, 150, 50,GREEN);
         balcony = true;
       }
@@ -261,17 +260,16 @@ void navigation(){
     // area 4
     if (tp.y > 80 && tp.y < 130 && tp.x > 170 && tp.x < 320) {
       Serial.println("Liv Rm Fan Clikced ");
-      //mqtt.publish("/brownstone/livingrm/switch/cmnd/Power1","");
       if (livrmfan == true){
         buzzoff();
-        mqtt.publish("brownstone/livingrm/cmnd/switch/Power1","OFF",1);
+        mqtt.publish("bs/livingrm/cmnd/switch/Power1","OFF",1);
         Serial.println("MQTT OFF");
         myGLCD.fillRect(170,80,150,50,BLACK);
         livrmfan = false;
       }
       else{
         buzzon();
-        mqtt.publish("brownstone/livingrm/cmnd/switch/Power1","ON",1);
+        mqtt.publish("bs/livingrm/cmnd/switch/Power1","ON",1);
         Serial.println("MQTT ON");
         myGLCD.fillRect(170,80,150,50,GREEN);
         livrmfan = true;
@@ -285,14 +283,14 @@ void navigation(){
       Serial.println("hallway1 Clicked ");
       if (hallway1 == true){
         buzzoff();
-        mqtt.publish("brownstone/hallway1/cmnd/switch/Power2","OFF",1);
+        mqtt.publish("bs/hallway1/cmnd/switch/Power2","OFF",1);
         Serial.println("MQTT OFF");
         myGLCD.fillRect(0,140,150,50,BLACK);
         hallway1 = false;
       }
       else{
         buzzon();
-        mqtt.publish("brownstone/hallway1/cmnd/switch/Power2","ON",1);
+        mqtt.publish("bs/hallway1/cmnd/switch/Power2","ON",1);
         Serial.println("MQTT ON");
         myGLCD.fillRect(0,140,150,50,GREEN);
         hallway1 = true;
@@ -306,7 +304,7 @@ void navigation(){
       Serial.println("kitchen Clicked ");
       if (kitchen == true){
         buzzoff();
-        mqtt.publish("cmnd/kitchen/Power","OFF",1);
+        mqtt.publish("bs/kitchen/cmnd/switch/Power","OFF",1);
         Serial.println("MQTT OFF");
         myGLCD.fillRect(170,140,150,50,BLACK);
         kitchen = false;
@@ -314,7 +312,7 @@ void navigation(){
       else{
         buzzon();
         //livrmfan = true;
-        mqtt.publish("cmnd/kitchen/Power","ON",1);
+        mqtt.publish("bs/kitchen/cmnd/switch/Power","ON",1);
         Serial.println("MQTT ON");
         myGLCD.fillRect(170,140,150,50,GREEN);
         kitchen = true;

@@ -112,10 +112,10 @@ void mqttConnected(void* response) {
   
   // doorbell 
   // first initialise it to OFF when startup
-  mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
-  mqtt.subscribe("brownstone/touchctl/buzzer",1);
-  
-  mqtt.subscribe("brownstone/livingrm/stat/switch/POWER1", 1);
+  mqtt.publish("bs/touchctl/buzzer","OFF",1);
+  mqtt.subscribe("bs/touchctl/buzzer",1);
+  mqtt.subscribe("bs/+/stat/switch/RESULT", 1);
+  /*mqtt.subscribe("brownstone/livingrm/stat/switch/POWER1", 1);
   mqtt.subscribe("stat/livingrm/POWER1", 1);
   
   mqtt.subscribe("brownstone/livingrm/stat/switch/POWER2", 1);
@@ -131,7 +131,7 @@ void mqttConnected(void* response) {
   mqtt.subscribe("stat/hallway1/POWER1", 1);
   
   mqtt.subscribe("brownstone/kitchen/stat/switch/POWER", 1);
-  mqtt.subscribe("stat/kitchen/POWER", 1);
+  mqtt.subscribe("stat/kitchen/POWER", 1);*/
   
   // refresh all the button status
   controlPanelQueryStatus();
@@ -167,37 +167,62 @@ void mqttData(void* response) {
 
   //boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway1 = false, kitchen = false;
   // living rm light status 
-  if ((topic == "stat/livingrm/POWER2") || (topic == "brownstone/livingrm/stat/switch/POWER2")){
+  if (topic == "bs/livingrm/stat/switch/RESULT"){
     
-    if (data == "ON"){
-      Serial.println("power is on");
+    if (data == "{\"POWER1\":\"ON\"}"){
+      Serial.println("fan power is on");
       livrmfan = true;
       myGLCD.fillRect(170,80,150,50,GREEN);
     } 
-    else {
-      Serial.println("power is off");
+    if (data == "{\"POWER1\":\"OFF\"}"){
+      Serial.println("Fan power is off");
       livrmfan = false;
       myGLCD.fillRect(170,80,150,50,BLACK);
 
     }
+    if (data == "{\"POWER2\":\"ON\"}"){
+      Serial.println("living rm light power is on");
+      livrm = true;
+       myGLCD.fillRect(170, 20, 150, 50, GREEN);
+    } 
+    if (data == "{\"POWER2\":\"OFF\"}"){
+      Serial.println("living rm light power is off");
+      livrm = false;
+      
+      myGLCD.fillRect(170, 20, 150, 50, BLACK);      
+
+    }
+
   }
-  if ((topic == "stat/hallway1/POWER1") || (topic == "brownstone/hallway1/stat/switch/POWER1")){
+  if (topic == "bs/hallway1/stat/switch/RESULT"){
     
-    if (data == "ON"){
-      Serial.println("power is on");
+    if (data == "{\"POWER1\":\"ON\"}"){
+      Serial.println("doorway power1 is on");
       doorway = true;
       myGLCD.fillRect(0, 20, 150, 50, GREEN);
     } 
-    else {
-      Serial.println("power is off");
+    if (data == "{\"POWER1\":\"OFF\"}"){
+      Serial.println("doorway power1 is off");
       doorway = false;
       myGLCD.fillRect(0, 20, 150, 50, BLACK);
 
     }
+    if (data == "{\"POWER2\":\"ON\"}"){
+      Serial.println("hallway power is on");
+      hallway1 = true;
+       myGLCD.fillRect(0, 140, 150, 50, GREEN);
+    } 
+    if (data == "{\"POWER2\":\"OFF\"}"){
+      Serial.println("hallway power is off");
+      hallway1 = false;
+      
+      myGLCD.fillRect(0, 140, 150, 50, BLACK);      
+
+    }    
   }
-  if ((topic == "stat/balcony/POWER") || (topic == "brownstone/balcony/stat/switch/POWER")){
+  if (topic == "bs/balcony/stat/switch/RESULT"){
     
-    if (data == "ON"){
+    if (data == "{\"POWER\":\"ON\"}"){
       Serial.println("power is on");
       balcony = true;
       myGLCD.fillRect(0, 80, 150, 50, GREEN);
@@ -209,45 +234,16 @@ void mqttData(void* response) {
 
     }
   }
-  if ((topic == "stat/livingrm/POWER1") || (topic == "brownstone/livingrm/stat/switch/POWER1")){
-    
-    if (data == "ON"){
-      Serial.println("power is on");
-      livrm = true;
-       myGLCD.fillRect(170, 20, 150, 50, GREEN);
-    } 
-    else {
-      Serial.println("power is off");
-      livrm = false;
-      
-      myGLCD.fillRect(170, 20, 150, 50, BLACK);      
 
-    }
-  }
-  if ((topic == "stat/hallway1/POWER2") || (topic == "brownstone/hallway1/stat/switch/POWER2")){
+  if (topic == "bs/kitchen/stat/switch/RESULT"){
     
-    if (data == "ON"){
-      Serial.println("power is on");
-      hallway1 = true;
-       myGLCD.fillRect(0, 140, 150, 50, GREEN);
-    } 
-    else {
-      Serial.println("power is off");
-      hallway1 = false;
-      
-      myGLCD.fillRect(0, 140, 150, 50, BLACK);      
-
-    }
-  }
-  if ((topic == "stat/kitchen/POWER") || (topic == "brownstone/kitchen/stat/switch/POWER")){
-    
-    if (data == "ON"){
-      Serial.println("power is on");
+    if (data == "{\"POWER\":\"ON\"}"){
+      Serial.println("kitchen light power is on");
       kitchen = true;
        myGLCD.fillRect(170, 140, 150, 50, GREEN);
     } 
     else {
-      Serial.println("power is off");
+      Serial.println("kitchen light is off");
       kitchen = false;
       
       myGLCD.fillRect(170, 140, 150, 50, BLACK);      
@@ -255,7 +251,7 @@ void mqttData(void* response) {
     }
   }
 
-  if (topic == "brownstone/touchctl/buzzer"){
+  if (topic == "bs/touchctl/buzzer"){
     if (data == "ON"){
       buzzer = true;
     }
@@ -273,12 +269,12 @@ void mqttPublished(void* response) {
 
 
 void controlPanelQueryStatus(){
-  mqtt.publish("brownstone/livingrm/cmnd/switch/Power1","8",1);
-  mqtt.publish("cmnd/hallway1/Power1","8",1);
-  mqtt.publish("brownstone/livingrm/cmnd/switch/Power2","8",1);
-  mqtt.publish("brownstone/balcony/cmnd/switch/Power","8",1);
-  mqtt.publish("brownstone/hallway1/cmnd/switch/Power2","8",1);
-  mqtt.publish("cmnd/kitchen/Power","8",1);
+  mqtt.publish("bs/livingrm/cmnd/switch/Power1","8",1);
+  mqtt.publish("bs/livingrm/cmnd/switch/Power2","8",1);
+  mqtt.publish("bs/hallway1/cmnd/switch/Power1","8",1);
+  mqtt.publish("bs/hallway1/cmnd/switch/Power2","8",1);
+  mqtt.publish("bs/balcony/cmnd/switch/Power","8",1);
+  mqtt.publish("bs/kitchen/cmnd/switch/Power","8",1);
   Serial.println("controlPanelQueryStatus");
 }
 
@@ -344,7 +340,7 @@ void setup() {
 
 }
 
-
+bool firstboot=true;
 int rebroadcast = 0;
 void loop() {
   esp.Process();
@@ -352,6 +348,11 @@ void loop() {
     controlPanelQueryStatus();
     boolean ispressed;
     
+    // first boot, query all the switches status
+    if (firstboot){
+      firstboot=false;
+      controlPanelQueryStatus();
+    }
     // loop when the touch screen is not pressed.
     while ((ispressed =ISPRESSED()) == false){
       esp.Process();
@@ -371,7 +372,7 @@ void loop() {
         Serial.println("Door Bell pressed!");
         Serial3.println("Door Bell pressed!");
         buzzer = false;
-        mqtt.publish("brownstone/touchctl/buzzer","OFF",1);
+        mqtt.publish("bs/touchctl/buzzer","OFF",1);
         playMusic();
       }
       
