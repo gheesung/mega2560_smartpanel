@@ -106,10 +106,6 @@ void readCoordinates()
 
     while (OK == false)
     {
-        //myGLCD.setColor(255, 255, 255);
-        //myGLCD.print("*  PRESS  *", CENTER, text_y_center);
-        //while (ISPRESSED() == false) {}
-        //myGLCD.print("*  HOLD!  *", CENTER, text_y_center);
         cnt = 0;
         iter = 100;  // higher value to increase sensitivity
         do

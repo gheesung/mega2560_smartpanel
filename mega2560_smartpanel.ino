@@ -111,27 +111,12 @@ void mqttConnected(void* response) {
   connected = true;
   
   // doorbell 
-  // first initialise it to OFF when startup
-  mqtt.publish("bs/touchctl/buzzer","OFF",1);
+  // first initialise it to arbitary value when startup
+  // This is because of MQTT is set to retain mode
+  mqtt.publish("bs/rfbridge/cmnd/switch/RfCode","AAAAA",1);
+  
   mqtt.subscribe("bs/touchctl/buzzer",1);
   mqtt.subscribe("bs/+/stat/switch/RESULT", 1);
-  /*mqtt.subscribe("brownstone/livingrm/stat/switch/POWER1", 1);
-  mqtt.subscribe("stat/livingrm/POWER1", 1);
-  
-  mqtt.subscribe("brownstone/livingrm/stat/switch/POWER2", 1);
-  mqtt.subscribe("stat/livingrm/POWER2", 1);
-  
-  mqtt.subscribe("brownstone/balcony/stat/switch/POWER", 1);
-  mqtt.subscribe("stat/balcony/POWER", 1);
-  
-  mqtt.subscribe("brownstone/hallway1/stat/switch/POWER2", 1);
-  mqtt.subscribe("stat/hallway1/POWER2", 1);
-  
-  mqtt.subscribe("brownstone/hallway1/stat/switch/POWER1", 1);
-  mqtt.subscribe("stat/hallway1/POWER1", 1);
-  
-  mqtt.subscribe("brownstone/kitchen/stat/switch/POWER", 1);
-  mqtt.subscribe("stat/kitchen/POWER", 1);*/
   
   // refresh all the button status
   controlPanelQueryStatus();
@@ -145,6 +130,7 @@ void mqttDisconnected(void* response) {
   connected = false;
   
   // force a reboot when the MQTT is disconnected
+  // this is to reinit everything
   delay(1000);
   asm volatile ("  jmp 0");  
 }
