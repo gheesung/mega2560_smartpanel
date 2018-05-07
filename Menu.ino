@@ -18,43 +18,7 @@
 
 
 int page = 0;
-int pulsev = 0;
-
-int prevpage;
 unsigned long currenttime;
-unsigned long ssitime;
-char voltage[10];
-
-
-int getBandgap(void) // Returns actual value of Vcc (x 100) 415 = 4.15v
-{
-        
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-     // For mega boards
-     const long InternalReferenceVoltage = 1115L;  // Adjust this value to your boards specific internal BG voltage x1000
-        // REFS1 REFS0          --> 0 1, AVcc internal ref. -Selects AVcc reference
-        // MUX4 MUX3 MUX2 MUX1 MUX0  --> 11110 1.1V (VBG)         -Selects channel 30, bandgap voltage, to measure
-     ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR)| (0<<MUX5) | (1<<MUX4) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
-  
-#else
-     // For 168/328 boards
-     const long InternalReferenceVoltage = 1056L;  // Adjust this value to your boards specific internal BG voltage x1000
-        // REFS1 REFS0          --> 0 1, AVcc internal ref. -Selects AVcc external reference
-        // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         -Selects channel 14, bandgap voltage, to measure
-     ADMUX = (0<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (1<<MUX2) | (1<<MUX1) | (0<<MUX0);
-       
-#endif
-     delay(50);  // Let mux settle a little to get a more stable A/D conversion
-        // Start a conversion  
-     ADCSRA |= _BV( ADSC );
-        // Wait for it to complete
-     while( ( (ADCSRA & (1<<ADSC)) != 0 ) );
-        // Scale the value
-     int results = (((InternalReferenceVoltage * 1023L) / ADC) + 5L) / 10L; // calculates for straight line value 
-     return results;
-}
-
-
 
 
 void drawhomeicon() { // draws a white home icon
@@ -120,7 +84,7 @@ void drawStartupScreen(){
   myGLCD.fillRectXY(0, 0, 320, 10); // status bar
   drawhomeicon(); // draw the home icon
   myGLCD.setCursor(1, 1);
-  myGLCD.println("Welcome to The Brownstone v0.3 ");
+  myGLCD.println("Welcome to The Brownstone v0.4 ");
   homescr(); // draw the homescreen
   myGLCD.setColor(WHITE);
   myGLCD.drawRectXY(0, 200, 245, 40); // message box
@@ -141,16 +105,6 @@ void refreshDateTime() {
 
 }
 
-
-void redraw() { // redraw the page
-  if ((prevpage != 6) || (page !=7)) {
-    clearcenter();
-  }
-  if (page == 0) {
-    homescr();
-  }
-}
-
 void clearcenter() { // the reason for so many small "boxes" is that it's faster than filling the whole thing
   myGLCD.setColor(BLACK);
   myGLCD.drawRectXY(0, 20, 150, 50);
@@ -167,25 +121,6 @@ void clearcenter() { // the reason for so many small "boxes" is that it's faster
   myGLCD.fillRectXY(192, 157, 106, 16);
 }
 
-
-void decimate(char test[],int dec) {  // creates decimal function  decimate(string containing integer, number of decimal places)
-
- int i=0;  
- int length=strlen(test);
- char msg[10]="";
-
- strcpy(msg,test);
-
- if (length <= dec) {
-   for(i=dec;i>(dec-length);i--)  msg[i] = msg[i-(dec-length+1)];
-   for(i=0;i<(dec+1-length);i++)  msg[i]='0';
-   length = strlen(msg);
- }
- for (i=length;i>(length-dec);i--)  msg[i]=msg[i-1];
- msg[length-dec]='.';
-
- strcpy(test,msg);
-} 
 
 // This is the main routine to monitor which buttons on the touch screen was clicked.
 void navigation(){

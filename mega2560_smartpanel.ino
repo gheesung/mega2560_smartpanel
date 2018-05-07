@@ -28,6 +28,7 @@
 #include <ArduinoJson.h>
 #include <TimeLib.h>
 
+// specific to the tft display
 #include <Adafruit_GFX.h>
 #include <UTFTGLUE.h>            //we are using UTFT display methods
 UTFTGLUE myGLCD(0x9341, A2, A1, A3, A4, A0);
@@ -64,7 +65,7 @@ int dispx, dispy, text_y_center, swapxy;
 uint32_t calx, caly, cals;
 char buf[13];
 
-
+#define BUZZER 48 // buzzer pin
 
 
 // Initialize a connection to esp-link using the normal hardware serial port both for
@@ -102,7 +103,7 @@ void wifiCb(void* response) {
   }
 }
 
-bool connected = false;
+bool connected = false; // global variable to track if connected to mqtt
 
 // Callback when MQTT is connected
 void mqttConnected(void* response) {
@@ -151,7 +152,6 @@ void mqttData(void* response) {
   Serial3.print("Received: data=");
   Serial3.println(data);
 
-  //boolean doorway = false, livrm = false, balcony = false, livrmfan = false, hallway1 = false, kitchen = false;
   // living rm light status 
   if (topic == "bs/livingrm/stat/switch/RESULT"){
     
@@ -180,6 +180,7 @@ void mqttData(void* response) {
     }
 
   }
+  // hallway
   if (topic == "bs/hallway1/stat/switch/RESULT"){
     
     if (data == "{\"POWER1\":\"ON\"}"){
@@ -206,6 +207,7 @@ void mqttData(void* response) {
 
     }    
   }
+  // balcony
   if (topic == "bs/balcony/stat/switch/RESULT"){
     
     if (data == "{\"POWER\":\"ON\"}"){
@@ -220,7 +222,7 @@ void mqttData(void* response) {
 
     }
   }
-
+  // kitchen
   if (topic == "bs/kitchen/stat/switch/RESULT"){
     
     if (data == "{\"POWER\":\"ON\"}"){
@@ -236,7 +238,8 @@ void mqttData(void* response) {
 
     }
   }
-
+  
+  // buzzer
   if (topic == "bs/touchctl/buzzer"){
     if (data == "ON"){
       buzzer = true;
@@ -253,7 +256,9 @@ void mqttPublished(void* response) {
   Serial.println("MQTT published");
 }
 
-
+// this is specific to Tasmota firmware.
+// by publish a message, we can get the current switch status.
+// this is done this way because sometime the mqttData callback is not triggered.
 void controlPanelQueryStatus(){
   mqtt.publish("bs/livingrm/cmnd/switch/Power1","8",1);
   mqtt.publish("bs/livingrm/cmnd/switch/Power2","8",1);
@@ -264,9 +269,11 @@ void controlPanelQueryStatus(){
   Serial.println("controlPanelQueryStatus");
 }
 
-#define BUZZER 48 
+
 void setup() {
 
+  // Serial is initialised so that debug message can be shown on the ESP-link web console
+  // Serial3 is to display at the Arduino Serial Monitor
   Serial.begin(115200);
   Serial3.begin(115200);
 
@@ -287,8 +294,8 @@ void setup() {
       myGLCD.print("BROKEN TOUCHSCREEN", CENTER, dispy / 2);
       while (1);
   }
-  
   drawStartupScreen();
+  
   // get the time from ESP-link NTP time. 
   // the time is already time-zone adjusted.
   uint32_t currtime = cmd.GetTime();
@@ -326,19 +333,13 @@ void setup() {
 
 }
 
-bool firstboot=true;
-int rebroadcast = 0;
+int rebroadcast = 0; // rebroadcast counter
 void loop() {
   esp.Process();
   if (connected) {
     controlPanelQueryStatus();
     boolean ispressed;
     
-    // first boot, query all the switches status
-    if (firstboot){
-      firstboot=false;
-      controlPanelQueryStatus();
-    }
     // loop when the touch screen is not pressed.
     while ((ispressed =ISPRESSED()) == false){
       esp.Process();
