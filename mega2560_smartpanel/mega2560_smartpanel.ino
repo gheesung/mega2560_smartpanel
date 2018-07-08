@@ -93,12 +93,16 @@ void wifiCb(void* response) {
 
     if(status == STATION_GOT_IP) {
       Serial.println("WIFI CONNECTED");
+#ifdef DEBUG      
       Serial3.println("WIFI CONNECTED");
+#endif      
     } else {
       Serial.print("WIFI NOT READY: ");
       Serial.println(status);
+#ifdef DEBUG            
       Serial3.print("WIFI NOT READY: ");
       Serial3.println(status);
+#endif
     }
   }
 }
@@ -108,16 +112,30 @@ bool connected = false; // global variable to track if connected to mqtt
 // Callback when MQTT is connected
 void mqttConnected(void* response) {
   Serial.println("MQTT connected!");
+#ifdef DEBUG  
   Serial3.println("MQTT connected!");
+#endif
   connected = true;
   
   // doorbell 
   // first initialise it to arbitary value when startup
   // This is because of MQTT is set to retain mode
   mqtt.publish("bs/rfbridge/cmnd/switch/RfCode","AAAAA",1);
-  
-  mqtt.subscribe("bs/touchctl/buzzer",1);
-  mqtt.subscribe("bs/+/stat/switch/RESULT", 1);
+
+ 
+  mqtt.subscribe("bs/touchctl/doorbell");
+  mqtt.subscribe("bs/+/stat/switch/POWER");
+  mqtt.subscribe("bs/+/stat/switch/POWER1");
+  mqtt.subscribe("bs/+/stat/switch/POWER2");
+  /*mqtt.subscribe("bs/livingrm/stat/switch/POWER2");
+  mqtt.subscribe("bs/hallway1/stat/switch/POWER1");
+  mqtt.subscribe("bs/hallway1/stat/switch/POWER2");
+  mqtt.subscribe("bs/kitchen/stat/switch/POWER");
+  mqtt.subscribe("bs/balcony/stat/switch/POWER");
+  mqtt.subscribe("bs/livingrm/stat/switch/POWER1");*/
+  //mqtt.subscribe("bs/livingrm/stat/switch/RESULT");
+  //mqtt.subscribe("bs/hallway1/stat/switch/RESULT");
+  //mqtt.subscribe("bs/balcony/stat/switch/RESULT");
   
   // refresh all the button status
   controlPanelQueryStatus();
@@ -143,35 +161,39 @@ void mqttData(void* response) {
   String topic = res->popString();
   Serial.print("Received: topic=");
   Serial.println(topic);
+#ifdef DEBUG
   Serial3.print("Received: topic=");
   Serial3.println(topic);
-
+#endif
   String data = res->popString();
   Serial.print("Received: data=");
   Serial.println(data);
+#ifdef DEBUG
   Serial3.print("Received: data=");
   Serial3.println(data);
-
+#endif
   // living rm light status 
-  if (topic == "bs/livingrm/stat/switch/RESULT"){
+  if (topic == "bs/livingrm/stat/switch/POWER1"){
     
-    if (data == "{\"POWER1\":\"ON\"}"){
+    if (data == "ON"){
       Serial.println("fan power is on");
       livrmfan = true;
       myGLCD.fillRect(170,80,150,50,GREEN);
     } 
-    if (data == "{\"POWER1\":\"OFF\"}"){
+    if (data == "OFF"){
       Serial.println("Fan power is off");
       livrmfan = false;
       myGLCD.fillRect(170,80,150,50,BLACK);
 
     }
-    if (data == "{\"POWER2\":\"ON\"}"){
+  }
+  if (topic == "bs/livingrm/stat/switch/POWER2"){    
+    if (data == "ON"){
       Serial.println("living rm light power is on");
       livrm = true;
        myGLCD.fillRect(170, 20, 150, 50, GREEN);
     } 
-    if (data == "{\"POWER2\":\"OFF\"}"){
+    if (data == "OFF"){
       Serial.println("living rm light power is off");
       livrm = false;
       
@@ -181,25 +203,27 @@ void mqttData(void* response) {
 
   }
   // hallway
-  if (topic == "bs/hallway1/stat/switch/RESULT"){
+  if (topic == "bs/hallway1/stat/switch/POWER1"){
     
-    if (data == "{\"POWER1\":\"ON\"}"){
+    if (data == "ON"){
       Serial.println("doorway power1 is on");
       doorway = true;
       myGLCD.fillRect(0, 20, 150, 50, GREEN);
     } 
-    if (data == "{\"POWER1\":\"OFF\"}"){
+    if (data == "OFF"){
       Serial.println("doorway power1 is off");
       doorway = false;
       myGLCD.fillRect(0, 20, 150, 50, BLACK);
 
     }
-    if (data == "{\"POWER2\":\"ON\"}"){
+  }
+  if (topic == "bs/hallway1/stat/switch/POWER2"){    
+    if (data == "ON"){
       Serial.println("hallway power is on");
       hallway1 = true;
        myGLCD.fillRect(0, 140, 150, 50, GREEN);
     } 
-    if (data == "{\"POWER2\":\"OFF\"}"){
+    if (data == "OFF"){
       Serial.println("hallway power is off");
       hallway1 = false;
       
@@ -208,9 +232,9 @@ void mqttData(void* response) {
     }    
   }
   // balcony
-  if (topic == "bs/balcony/stat/switch/RESULT"){
+  if (topic == "bs/balcony/stat/switch/POWER"){
     
-    if (data == "{\"POWER\":\"ON\"}"){
+    if (data == "ON"){
       Serial.println("power is on");
       balcony = true;
       myGLCD.fillRect(0, 80, 150, 50, GREEN);
@@ -223,9 +247,9 @@ void mqttData(void* response) {
     }
   }
   // kitchen
-  if (topic == "bs/kitchen/stat/switch/RESULT"){
+  if (topic == "bs/kitchen/stat/switch/POWER"){
     
-    if (data == "{\"POWER\":\"ON\"}"){
+    if (data == "ON"){
       Serial.println("kitchen light power is on");
       kitchen = true;
        myGLCD.fillRect(170, 140, 150, 50, GREEN);
@@ -240,9 +264,10 @@ void mqttData(void* response) {
   }
   
   // buzzer
-  if (topic == "bs/touchctl/buzzer"){
+  if (topic == "bs/touchctl/doorbell"){
     if (data == "ON"){
       buzzer = true;
+
     }
     else
       buzzer = false;
@@ -260,12 +285,12 @@ void mqttPublished(void* response) {
 // by publish a message, we can get the current switch status.
 // this is done this way because sometime the mqttData callback is not triggered.
 void controlPanelQueryStatus(){
-  mqtt.publish("bs/livingrm/cmnd/switch/Power1","8",1);
-  mqtt.publish("bs/livingrm/cmnd/switch/Power2","8",1);
-  mqtt.publish("bs/hallway1/cmnd/switch/Power1","8",1);
-  mqtt.publish("bs/hallway1/cmnd/switch/Power2","8",1);
-  mqtt.publish("bs/balcony/cmnd/switch/Power","8",1);
-  mqtt.publish("bs/kitchen/cmnd/switch/Power","8",1);
+  mqtt.publish("bs/livingrm/cmnd/switch/Power1","8");
+  mqtt.publish("bs/livingrm/cmnd/switch/Power2","8");
+  mqtt.publish("bs/hallway1/cmnd/switch/Power1","8");
+  mqtt.publish("bs/hallway1/cmnd/switch/Power2","8");
+  mqtt.publish("bs/balcony/cmnd/switch/Power","8");
+  mqtt.publish("bs/kitchen/cmnd/switch/Power","8");
   Serial.println("controlPanelQueryStatus");
 }
 
@@ -274,8 +299,8 @@ void setup() {
 
   // Serial is initialised so that debug message can be shown on the ESP-link web console
   // Serial3 is to display at the Arduino Serial Monitor
-  Serial.begin(115200);
-  Serial3.begin(115200);
+  Serial.begin(250000);
+  Serial3.begin(250000);
 
   // setup the buzzer to simulate button click sound
   pinMode(BUZZER, OUTPUT);
@@ -333,37 +358,41 @@ void setup() {
 
 }
 
-int rebroadcast = 0; // rebroadcast counter
+static int rebroadcast = 0; // rebroadcast counter
+static uint32_t last;
+
 void loop() {
   esp.Process();
   if (connected) {
     controlPanelQueryStatus();
     boolean ispressed;
-    
+
     // loop when the touch screen is not pressed.
     while ((ispressed =ISPRESSED()) == false){
       esp.Process();
-      
+      //Serial.println((millis()-last));
       // periodically refresh the screen so that the clock is refreshed and
       // the button status is updated. 10000 is arbitrary chosen
-      if (rebroadcast == 10000){
+      if ((millis()-last) > 20000){
         controlPanelQueryStatus();
         timeStatus();
         digitalClockDisplay(); 
         refreshDateTime();
         rebroadcast = 0;
+        last = millis();
       }
-
+      
       //check if buzzer is pressed
       if (buzzer == true){
         Serial.println("Door Bell pressed!");
         Serial3.println("Door Bell pressed!");
         buzzer = false;
-        mqtt.publish("bs/touchctl/buzzer","OFF",1);
+        mqtt.publish("bs/touchctl/doorbell","OFF");
         playMusic();
       }
       
       rebroadcast++;
+
     }
     readCoordinates();
     showpoint();
@@ -375,6 +404,7 @@ void loop() {
     y = map(tp.x, 167, 880, 0, 240);
   
     navigation();
+    last = millis();
   }
   
 }

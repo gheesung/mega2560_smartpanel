@@ -6,7 +6,6 @@
 
 // Variables used in the loop
 static int count;
-static uint32_t last;
 static int detected = 0;
 
 
