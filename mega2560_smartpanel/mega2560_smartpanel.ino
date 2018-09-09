@@ -1,7 +1,7 @@
 /*
   Mega2560_smartpanel.ino - ESP-Link, MQTT and smartpanel
 
-  Copyright (C) 2017  Ghee Sung
+  Copyright (C) 2018  Ghee Sung
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -121,25 +121,11 @@ void mqttConnected(void* response) {
   // first initialise it to arbitary value when startup
   // This is because of MQTT is set to retain mode
   mqtt.publish("bs/rfbridge/cmnd/switch/RfCode","AAAAA",1);
-
+  mqtt.publish("bs/touchctl/boot","BOOT",1);
  
   mqtt.subscribe("bs/touchctl/doorbell");
-  mqtt.subscribe("bs/+/stat/switch/POWER");
-  mqtt.subscribe("bs/+/stat/switch/POWER1");
-  mqtt.subscribe("bs/+/stat/switch/POWER2");
-  /*mqtt.subscribe("bs/livingrm/stat/switch/POWER2");
-  mqtt.subscribe("bs/hallway1/stat/switch/POWER1");
-  mqtt.subscribe("bs/hallway1/stat/switch/POWER2");
-  mqtt.subscribe("bs/kitchen/stat/switch/POWER");
-  mqtt.subscribe("bs/balcony/stat/switch/POWER");
-  mqtt.subscribe("bs/livingrm/stat/switch/POWER1");*/
-  //mqtt.subscribe("bs/livingrm/stat/switch/RESULT");
-  //mqtt.subscribe("bs/hallway1/stat/switch/RESULT");
-  //mqtt.subscribe("bs/balcony/stat/switch/RESULT");
-  
-  // refresh all the button status
-  controlPanelQueryStatus();
-  
+  mqtt.subscribe("bs/touchctl/lights");
+
 }
 
 // Callback when MQTT is disconnected
@@ -172,94 +158,75 @@ void mqttData(void* response) {
   Serial3.print("Received: data=");
   Serial3.println(data);
 #endif
-  // living rm light status 
-  if (topic == "bs/livingrm/stat/switch/POWER1"){
-    
-    if (data == "ON"){
-      Serial.println("fan power is on");
-      livrmfan = true;
-      myGLCD.fillRect(170,80,150,50,GREEN);
-    } 
-    if (data == "OFF"){
-      Serial.println("Fan power is off");
-      livrmfan = false;
-      myGLCD.fillRect(170,80,150,50,BLACK);
 
-    }
-  }
-  if (topic == "bs/livingrm/stat/switch/POWER2"){    
-    if (data == "ON"){
-      Serial.println("living rm light power is on");
-      livrm = true;
-       myGLCD.fillRect(170, 20, 150, 50, GREEN);
-    } 
-    if (data == "OFF"){
-      Serial.println("living rm light power is off");
-      livrm = false;
-      
-      myGLCD.fillRect(170, 20, 150, 50, BLACK);      
-
-    }
-
-  }
-  // hallway
-  if (topic == "bs/hallway1/stat/switch/POWER1"){
-    
-    if (data == "ON"){
+  // the data is encoded into xxxxxx where x can be 0/1.
+  // start from left, 
+  // 1st char is doorway light status
+  // 2nd char is living light status
+  // 3rd char is balcony light status
+  // 4th char is living rm fan status
+  // 5th char is Out. Kitchen light status
+  // 6th char is Kitchen light status
+  if (topic == "bs/touchctl/lights"){    
+    if(data[0] == '1'){
       Serial.println("doorway power1 is on");
       doorway = true;
       myGLCD.fillRect(0, 20, 150, 50, GREEN);
     } 
-    if (data == "OFF"){
+    if (data[0] == '0'){
       Serial.println("doorway power1 is off");
       doorway = false;
       myGLCD.fillRect(0, 20, 150, 50, BLACK);
-
     }
-  }
-  if (topic == "bs/hallway1/stat/switch/POWER2"){    
-    if (data == "ON"){
-      Serial.println("hallway power is on");
-      hallway1 = true;
-       myGLCD.fillRect(0, 140, 150, 50, GREEN);
+    if (data[1] == '1'){
+      Serial.println("living rm light power is on");
+      livrm = true;
+      myGLCD.fillRect(170, 20, 150, 50, GREEN);
     } 
-    if (data == "OFF"){
-      Serial.println("hallway power is off");
-      hallway1 = false;
-      
-      myGLCD.fillRect(0, 140, 150, 50, BLACK);      
-
-    }    
-  }
-  // balcony
-  if (topic == "bs/balcony/stat/switch/POWER"){
-    
-    if (data == "ON"){
+    if (data[1] == '0'){
+      Serial.println("living rm light power is off");
+      livrm = false;
+      myGLCD.fillRect(170, 20, 150, 50, BLACK);      
+    }
+    if (data[2] == '1'){
       Serial.println("power is on");
       balcony = true;
       myGLCD.fillRect(0, 80, 150, 50, GREEN);
     } 
-    else {
+    if (data[2] == '0'){
       Serial.println("power is off");
       balcony = false;
       myGLCD.fillRect(0, 80, 150, 50, BLACK);
-
     }
-  }
-  // kitchen
-  if (topic == "bs/kitchen/stat/switch/POWER"){
-    
-    if (data == "ON"){
+    if (data[3] == '1'){
+      Serial.println("fan power is on");
+      livrmfan = true;
+      myGLCD.fillRect(170,80,150,50,GREEN);
+    } 
+    if (data[3] == '0'){
+      Serial.println("Fan power is off");
+      livrmfan = false;
+      myGLCD.fillRect(170,80,150,50,BLACK);
+    }
+    if (data[4] == '1'){
+      Serial.println("outside kitchen power is on");
+      hallway1 = true;
+      myGLCD.fillRect(0, 140, 150, 50, GREEN);
+    } 
+    if (data[4] == '0'){
+      Serial.println("outside kitchen power is off");
+      hallway1 = false;
+      myGLCD.fillRect(0, 140, 150, 50, BLACK);      
+    }    
+    if (data[5] == '1'){
       Serial.println("kitchen light power is on");
       kitchen = true;
        myGLCD.fillRect(170, 140, 150, 50, GREEN);
     } 
-    else {
+    if (data[5] == '0'){
       Serial.println("kitchen light is off");
       kitchen = false;
-      
       myGLCD.fillRect(170, 140, 150, 50, BLACK);      
-
     }
   }
   
@@ -279,19 +246,6 @@ void mqttData(void* response) {
 
 void mqttPublished(void* response) {
   Serial.println("MQTT published");
-}
-
-// this is specific to Tasmota firmware.
-// by publish a message, we can get the current switch status.
-// this is done this way because sometime the mqttData callback is not triggered.
-void controlPanelQueryStatus(){
-  mqtt.publish("bs/livingrm/cmnd/switch/Power1","8");
-  mqtt.publish("bs/livingrm/cmnd/switch/Power2","8");
-  mqtt.publish("bs/hallway1/cmnd/switch/Power1","8");
-  mqtt.publish("bs/hallway1/cmnd/switch/Power2","8");
-  mqtt.publish("bs/balcony/cmnd/switch/Power","8");
-  mqtt.publish("bs/kitchen/cmnd/switch/Power","8");
-  Serial.println("controlPanelQueryStatus");
 }
 
 
@@ -319,15 +273,6 @@ void setup() {
       myGLCD.print("BROKEN TOUCHSCREEN", CENTER, dispy / 2);
       while (1);
   }
-  drawStartupScreen();
-  
-  // get the time from ESP-link NTP time. 
-  // the time is already time-zone adjusted.
-  uint32_t currtime = cmd.GetTime();
-  setTime(currtime);
-  setSyncProvider(requestSync);
-  digitalClockDisplay();
-  refreshDateTime();
   
   // initialise the ESP-Link and connect to MQTT
   Serial.println("EL-Client starting!");
@@ -347,6 +292,21 @@ void setup() {
   } while(!ok);
   Serial.println("EL-Client synced!");
   Serial3.println("EL-Client synced!");
+
+  drawStartupScreen();
+
+  // get the time from ESP-link NTP time. 
+  // the time is already time-zone adjusted.
+  uint32_t currtime = cmd.GetTime();
+  
+  do {
+    currtime = cmd.GetTime();
+  } while (currtime == 0);
+  
+  setTime(currtime);
+  setSyncProvider(requestSync);
+  digitalClockDisplay();
+  refreshDateTime();  
   
   // Set-up callbacks for events and initialize with esp-link.
   mqtt.dataCb.attach(mqttData);
@@ -356,15 +316,16 @@ void setup() {
 
   mqtt.setup();
 
+
+
 }
 
-static int rebroadcast = 0; // rebroadcast counter
+
 static uint32_t last;
 
 void loop() {
   esp.Process();
   if (connected) {
-    controlPanelQueryStatus();
     boolean ispressed;
 
     // loop when the touch screen is not pressed.
@@ -374,14 +335,12 @@ void loop() {
       // periodically refresh the screen so that the clock is refreshed and
       // the button status is updated. 10000 is arbitrary chosen
       if ((millis()-last) > 20000){
-        controlPanelQueryStatus();
         timeStatus();
         digitalClockDisplay(); 
         refreshDateTime();
-        rebroadcast = 0;
         last = millis();
       }
-      
+
       //check if buzzer is pressed
       if (buzzer == true){
         Serial.println("Door Bell pressed!");
@@ -390,23 +349,14 @@ void loop() {
         mqtt.publish("bs/touchctl/doorbell","OFF");
         playMusic();
       }
-      
-      rebroadcast++;
-
     }
     readCoordinates();
     showpoint();
-    
-    int x,y;
-
-    //LANDSCAPE CALIBRATION     320 x 240
-    x = map(tp.y, 106, 899, 0, 320);
-    y = map(tp.x, 167, 880, 0, 240);
-  
+ 
     navigation();
     last = millis();
   }
-  
+ 
 }
 
 

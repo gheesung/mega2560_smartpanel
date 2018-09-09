@@ -84,7 +84,7 @@ void drawStartupScreen(){
   myGLCD.fillRectXY(0, 0, 320, 10); // status bar
   drawhomeicon(); // draw the home icon
   myGLCD.setCursor(1, 1);
-  myGLCD.println("Welcome to The Brownstone v0.4 ");
+  myGLCD.println("Welcome to The Brownstone v0.5 ");
   homescr(); // draw the homescreen
   myGLCD.setColor(WHITE);
   myGLCD.drawRectXY(0, 200, 245, 40); // message box
@@ -124,10 +124,10 @@ void clearcenter() { // the reason for so many small "boxes" is that it's faster
 
 // This is the main routine to monitor which buttons on the touch screen was clicked.
 void navigation(){
-  int y = map(tp.y, 106, 899, 0, 320);
-  int x = map(tp.x, 167, 880, 0, 240);
-   tp.x = y;
-   tp.y = x;
+  //int y = map(tp.y, 106, 899, 0, 320);
+  //int x = map(tp.x, 167, 880, 0, 240);
+  tp.x = map(tp.y, 106, 899, 0, 320);
+  tp.y = map(tp.x, 167, 880, 0, 240);
   Serial.print("\r\ntp.x="); Serial.print(tp.x);
   Serial.print(" tp.y="); Serial.println(tp.y);   
   Serial.print("Page ");Serial.println(page);
